@@ -1,6 +1,6 @@
 #include <iostream>
 #include <stdexcept>
-#include <cstring>
+#include <algorithm>  // для std::copy
 
 class smart_array {
 private:
@@ -13,7 +13,7 @@ private:
         int* new_data = new int[new_capacity];
 
         if (data != nullptr) {
-            std::memcpy(new_data, data, size * sizeof(int));
+            std::copy(data, data + size, new_data);
             delete[] data;
         }
 
@@ -23,38 +23,43 @@ private:
 
 public:
     // Конструктор
-    explicit smart_array(size_t initial_capacity) {
-        if (initial_capacity < 0) {
-            throw std::invalid_argument("Capacity must be non-negative");
+    explicit smart_array(size_t initial_capacity)
+        : data(nullptr), capacity(initial_capacity), size(0) {
+        if (initial_capacity > 0) {
+            data = new int[initial_capacity];
         }
-        data = new int[initial_capacity];
-        capacity = initial_capacity;
-        size = 0;
     }
 
     // Конструктор копирования
-    smart_array(const smart_array& other) {
-        data = new int[other.capacity];
-        capacity = other.capacity;
-        size = other.size;
-        std::memcpy(data, other.data, size * sizeof(int));
+    smart_array(const smart_array& other)
+        : capacity(other.capacity), size(other.size) {
+        if (capacity > 0) {
+            data = new int[capacity];
+            std::copy(other.data, other.data + size, data);
+        }
+        else {
+            data = nullptr;
+        }
     }
 
     // Оператор присваивания
     smart_array& operator=(const smart_array& other) {
-        // Защита от самоприсваивания
         if (this == &other) {
             return *this;
         }
 
-        // Освобождаем текущую память
-        delete[] data;
+        delete[] data;  // освобождаем текущую память
 
-        // Копируем данные из other
-        data = new int[other.capacity];
         capacity = other.capacity;
         size = other.size;
-        std::memcpy(data, other.data, size * sizeof(int));
+
+        if (capacity > 0) {
+            data = new int[capacity];
+            std::copy(other.data, other.data + size, data);
+        }
+        else {
+            data = nullptr;
+        }
 
         return *this;
     }

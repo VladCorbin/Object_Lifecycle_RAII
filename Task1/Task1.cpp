@@ -1,7 +1,8 @@
 #include <iostream>
 #include <stdexcept>
-#include <cstring>  // для std::memcpy
+#include <algorithm>  // для std::copy
 
+// Класс умного массива с автоматическим расширением
 class smart_array {
 private:
     int* data;           // указатель на динамический массив
@@ -13,9 +14,9 @@ private:
         size_t new_capacity = (capacity == 0) ? 1 : capacity * 2;
         int* new_data = new int[new_capacity];
 
-        // Копируем существующие элементы
+        // Копируем существующие элементы с помощью std::copy
         if (data != nullptr) {
-            std::memcpy(new_data, data, size * sizeof(int));
+            std::copy(data, data + size, new_data);
             delete[] data;  // освобождаем старую память
         }
 
@@ -25,13 +26,50 @@ private:
 
 public:
     // Конструктор: выделяет память на заданное количество элементов
-    explicit smart_array(size_t initial_capacity) {
-        if (initial_capacity < 0) {
-            throw std::invalid_argument("Capacity must be non-negative");
+    explicit smart_array(size_t initial_capacity)
+        : data(nullptr), capacity(initial_capacity), size(0) {
+        if (initial_capacity == 0) {
+            data = nullptr;
         }
-        data = new int[initial_capacity];
-        capacity = initial_capacity;
-        size = 0;
+        else {
+            data = new int[initial_capacity];
+        }
+    }
+
+    // Конструктор копирования
+    smart_array(const smart_array& other)
+        : capacity(other.capacity), size(other.size) {
+        if (capacity == 0) {
+            data = nullptr;
+        }
+        else {
+            data = new int[capacity];
+            std::copy(other.data, other.data + size, data);
+        }
+    }
+
+    // Оператор присваивания (с защитой от самоприсваивания)
+    smart_array& operator=(const smart_array& other) {
+        if (this == &other) {
+            return *this;
+        }
+
+        // Освобождаем текущую память
+        delete[] data;
+
+        // Копируем данные из other
+        capacity = other.capacity;
+        size = other.size;
+
+        if (capacity == 0) {
+            data = nullptr;
+        }
+        else {
+            data = new int[capacity];
+            std::copy(other.data, other.data + size, data);
+        }
+
+        return *this;
     }
 
     // Деструктор: освобождает выделенную память
@@ -67,6 +105,9 @@ public:
 };
 
 int main() {
+    // Устанавливаем локаль для корректного отображения кириллицы
+    std::setlocale(LC_ALL, "ru_RU.UTF-8");
+
     try {
         smart_array arr(5);  // начальный размер 5
 
@@ -78,19 +119,19 @@ int main() {
         arr.add_element(15);
 
         // Выводим элемент с индексом 1
-        std::cout << arr.get_element(1) << std::endl;
+        std::cout << arr.get_element(1) << std::endl;  // 4
 
         // Добавляем ещё элемент (произойдёт resize)
         arr.add_element(999);
-        std::cout << arr.get_element(5) << std::endl;
+        std::cout << arr.get_element(5) << std::endl;  // 999
 
         // Проверяем размеры
-        std::cout << "Size: " << arr.get_size() << std::endl;
-        std::cout << "Capacity: " << arr.get_capacity() << std::endl;
+        std::cout << "Размер: " << arr.get_size() << std::endl;
+        std::cout << "Ёмкость: " << arr.get_capacity() << std::endl;
 
     }
     catch (const std::exception& ex) {
-        std::cerr << "Error: " << ex.what() << std::endl;
+        std::cerr << "Ошибка: " << ex.what() << std::endl;
         return 1;
     }
 
